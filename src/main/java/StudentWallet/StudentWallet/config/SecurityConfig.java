@@ -18,6 +18,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import StudentWallet.StudentWallet.security.JwtAuthenticationFilter;
 import StudentWallet.StudentWallet.security.MyUserDetailService;
@@ -28,60 +31,51 @@ import StudentWallet.StudentWallet.security.MyUserDetailService;
 @EnableWebSecurity
 public class SecurityConfig {
 	
-	@Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-	
-	@Autowired
-	private MyUserDetailService myStudentDetailsService;
-	
+	  @Autowired
+	    private MyUserDetailService userDetailService;
+	    @Autowired
+	    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-	
-	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-	    return httpSecurity
-	            .cors(cors -> cors.configurationSource(request -> {
-	                var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
-	                corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000")); 
-	                corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-	                corsConfiguration.setAllowedHeaders(List.of("*"));
-	                corsConfiguration.setAllowCredentials(true);
-	                return corsConfiguration;
-	            }))
-	            
-	            .authorizeHttpRequests(registry -> {
-	                registry.requestMatchers("/", "/index.html", "/static/**", "/public/**").permitAll();
-	                registry.requestMatchers("/home", "/register/**", "/authenticate/**", "/alldocuments/**").permitAll();
-	                registry.requestMatchers("/admin/**").hasRole("ADMIN");
-	                registry.requestMatchers("/user/**", "/upload/**", "/download/**").hasRole("USER");
-	                registry.anyRequest().authenticated();
-	            })
-	            .formLogin(AbstractAuthenticationFilterConfigurer::permitAll)
-	            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-	            .build();
+	    @Bean
+	    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+	        return httpSecurity
+	        		
+	                .csrf(AbstractHttpConfigurer::disable)
+	                
+	                
+	                .authorizeHttpRequests(registry -> {
+	                    registry.requestMatchers("/", "/index.html", "/static/**", "/public/**","my-files" ,"upload","download").permitAll();
+	                    registry.requestMatchers("/home", "/register/**", "/authenticate","/ws/**").permitAll();
+	                    registry.requestMatchers("/admin/**").hasRole("ADMIN");
+	                    registry.requestMatchers("/user/**","/dashboard").hasRole("USER");
+	                    registry.anyRequest().authenticated();
+	                })
+	                .formLogin(AbstractAuthenticationFilterConfigurer::permitAll)
+	                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+	                .build();
+	    }
+
+	    @Bean
+	    public UserDetailsService userDetailsService() {
+	        return userDetailService;
+	    }
+
+	    @Bean
+	    public AuthenticationProvider authenticationProvider() {
+	        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+	        provider.setUserDetailsService(userDetailService);
+	        provider.setPasswordEncoder(passwordEncoder());
+	        return provider;
+	    }
+
+	    @Bean
+	    public AuthenticationManager authenticationManager() {
+	        return new ProviderManager(authenticationProvider());
+	    }
+
+	    @Bean
+	    public PasswordEncoder passwordEncoder() {
+	        return new BCryptPasswordEncoder();
+	    }
+	 
 	}
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return myStudentDetailsService;
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(myStudentDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager() {
-        return new ProviderManager(authenticationProvider());
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-	
-	
-	
-}
