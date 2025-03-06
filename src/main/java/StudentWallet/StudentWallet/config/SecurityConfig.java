@@ -44,7 +44,7 @@ public class SecurityConfig {
 	                
 	                
 	                .authorizeHttpRequests(registry -> {
-	                    registry.requestMatchers("/", "/index.html", "/static/**", "/public/**","my-files" ,"upload","download").permitAll();
+	                    registry.requestMatchers("/", "/index.html", "/static/**", "/public/**","my-files" ,"upload/**","download/**","delete/**").permitAll();
 	                    registry.requestMatchers("/home", "/register/**", "/authenticate","/ws/**").permitAll();
 	                    registry.requestMatchers("/admin/**").hasRole("ADMIN");
 	                    registry.requestMatchers("/user/**","/dashboard").hasRole("USER");

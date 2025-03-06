@@ -19,7 +19,7 @@ import StudentWallet.StudentWallet.security.MyUserDetailService;
 
 
 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 public class RegistrationController {
 	
