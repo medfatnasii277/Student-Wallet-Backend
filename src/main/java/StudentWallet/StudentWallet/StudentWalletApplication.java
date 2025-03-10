@@ -1,5 +1,6 @@
 package StudentWallet.StudentWallet;
 
+import java.beans.BeanProperty;
 import java.util.Arrays;
 
 import org.apache.catalina.core.ApplicationContext;
@@ -18,6 +19,5 @@ public class StudentWalletApplication {
 	
 	
 	
-
 }
 
