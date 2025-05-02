@@ -1,0 +1,177 @@
+package StudentWallet.StudentWallet.service;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import StudentWallet.StudentWallet.Model.Student;
+import StudentWallet.StudentWallet.Repository.MyStudentRepo;
+import jakarta.transaction.Transactional;
+
+@Service
+public class StudentService {
+	
+	 @Autowired
+	    private MyStudentRepo studentRepo;
+	 
+	 @Autowired
+	    private PasswordEncoder passwordEncoder;
+	 
+	 
+
+	    @Value("${file.upload-dir}")
+	    private String uploadDir;
+	 
+	 
+	 public Map<String, String> getProfilePicture(String username) throws IOException {
+	        // Retrieve the authenticated user
+	        Student student = studentRepo.findByUsername(username)
+	                .orElseThrow(() -> new RuntimeException("User not found"));
+
+	        Map<String, String> response = new HashMap<>();
+	        response.put("username", student.getUsername());
+
+	        // If no profile picture, return only the username
+	        if (student.getProfilePicture() == null || student.getProfilePicture().isEmpty()) {
+	            response.put("profilePicture", null);
+	            return response;
+	        }
+
+	        // Read the image from disk and encode it to Base64
+	        File file = new File(student.getProfilePicture());
+	        byte[] imageBytes = Files.readAllBytes(file.toPath());
+	        String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+
+	        response.put("profilePicture", base64Image);
+
+	        return response;
+	    }
+	 
+	 
+	 
+	// Get all students with pagination
+	    public Page<Student> getAllStudents(Pageable pageable) {
+	        return studentRepo.findAll(pageable);
+	    }
+	    
+	    // Get a student by ID
+	    public Optional<Student> getStudentById(Long id) {
+	        return studentRepo.findById(id);
+	    }
+	    
+	    // Get a student by username
+	    public Optional<Student> getStudentByUsername(String username) {
+	        return studentRepo.findByUsername(username);
+	    }
+	    
+	    // Save a student (create or update)
+	    @Transactional
+	    public Student saveStudent(Student student) {
+	        // If this is a new student (no ID), encode the password
+	        if (student.getId() == null && student.getPassword() != null) {
+	            student.setPassword(passwordEncoder.encode(student.getPassword()));
+	        }
+	        
+	        // If role is not set, default to USER
+	        if (student.getRole() == null || student.getRole().isEmpty()) {
+	            student.setRole("ROLE_USER");
+	        }
+	        
+	        return studentRepo.save(student);
+	    }
+	    
+	    // Delete a student
+	    public void deleteStudent(Long id) {
+	    	studentRepo.deleteById(id);
+	    }
+	    
+	    // Ban/Unban a student (toggle active status)
+	    @Transactional
+	    public Student toggleBan(Long id) {
+	        Student student = studentRepo.findById(id)
+	                .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
+	        
+	        // Assuming we use the Role field to indicate banned status
+	        // If the student is banned, unban them; if not banned, ban them
+	        if (student.getRole().equals("ROLE_BANNED")) {
+	            student.setRole("ROLE_USER");
+	        } else {
+	            student.setRole("ROLE_BANNED");
+	        }
+	        
+	        return studentRepo.save(student);
+	    }
+	    
+	    // Upload profile picture
+	    public String uploadProfilePicture(MultipartFile file) throws IOException {
+	        // Create directory if it doesn't exist
+	        Path uploadPath = Paths.get(uploadDir);
+	        if (!Files.exists(uploadPath)) {
+	            Files.createDirectories(uploadPath);
+	        }
+	        
+	        // Generate a unique filename
+	        String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+	        Path filePath = uploadPath.resolve(filename);
+	        
+	        // Save the file
+	        Files.copy(file.getInputStream(), filePath);
+	        
+	        return filename;
+	    }
+	    
+	    // Update student with profile picture
+	    @Transactional
+	    public Student updateStudentWithProfilePicture(Student student, MultipartFile profilePicture) throws IOException {
+	        if (profilePicture != null && !profilePicture.isEmpty()) {
+	            String filename = uploadProfilePicture(profilePicture);
+	            student.setProfilePicture(filename);
+	        }
+	        
+	        return saveStudent(student);
+	    }
+	    
+	    // Count all students
+	    public long countStudents() {
+	        return studentRepo.count();
+	    }
+	    
+	    // Change password
+	    @Transactional
+	    public void changePassword(Long id, String newPassword) {
+	        Student student = studentRepo.findById(id)
+	                .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
+	        
+	        student.setPassword(passwordEncoder.encode(newPassword));
+	        studentRepo.save(student);
+	    }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+
+}

@@ -3,16 +3,21 @@ package StudentWallet.StudentWallet.service;
 import StudentWallet.StudentWallet.Exception.DocumentNotFoundException;
 import StudentWallet.StudentWallet.Exception.FileStorageException;
 import StudentWallet.StudentWallet.Model.Documents;
+import StudentWallet.StudentWallet.Model.DocumentsTag;
 import StudentWallet.StudentWallet.Model.Student;
 import StudentWallet.StudentWallet.Repository.DocumentsRepo;
+import StudentWallet.StudentWallet.Repository.documentsTagRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -23,6 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,79 +41,84 @@ public class DocumentsService {
     @Autowired
     private DocumentsRepo documentsRepository;
 
-  
+    @Autowired
+    private documentsTagRepository tagRepo;
 
-    @Value("${file.upload-dir}") // Configure this in application.properties
+    @Value("${file.upload-dir}")
     private String uploadDir;
 
     // Upload a file
     public Documents uploadFile(MultipartFile file, Student student) throws IOException {
         // Ensure the upload directory exists
         Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
+        Files.createDirectories(uploadPath);
 
-        // Generate a unique file name to avoid conflicts
+        // Generate a unique file name
         String uniqueFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String filePath = uploadDir + "/" + uniqueFileName;
-        
-        var targetFile = new File(uploadDir+"/"+file.getOriginalFilename());
-        if(!Objects.equals(targetFile.getParent(), uploadDir)) {
-        	throw new SecurityException("Invalid File name");
+        Path filePath = uploadPath.resolve(uniqueFileName).normalize(); // Normalize path for security
+
+        // Prevent path traversal attack
+        if (!filePath.getParent().equals(uploadPath.toAbsolutePath())) {
+            throw new SecurityException("Invalid file path detected");
         }
-        
-        
 
-        // Save the file to the server
-        Files.copy(file.getInputStream(), Paths.get(filePath));
+        // Save file securely
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Save file metadata to the database
+        // Create document object
         Documents document = new Documents();
-        document.setName(file.getOriginalFilename());
+        document.setName(uniqueFileName);
         document.setType(file.getContentType());
-        document.setFilePath(filePath);
+        document.setFilePath(filePath.toString());
         document.setUploadDate(LocalDateTime.now());
         document.setStudent(student);
+
+        // Associate tags
+        DocumentsTag docTag = tagRepo.findByName(file.getContentType());
+        if (docTag == null) {
+            docTag = new DocumentsTag();
+            docTag.setName(file.getContentType());
+            tagRepo.save(docTag);
+        }
+        document.setDocTag(Collections.singletonList(docTag));
 
         return documentsRepository.save(document);
     }
 
-    // Get all files for a specific student
-    public List<Documents> getFilesByStudent(Student student) {
-    	List<Documents> liste ;
-        		liste = documentsRepository.findByStudent(student);
-        		if(liste == null) {
-        			throw new DocumentNotFoundException("FIle not found");
-        		}
-        		return  liste ;
-        		
+    // Get files for a student (pagination included)
+    public Page<Documents> getFilesByStudent(Student student, Pageable pageable) {
+        Page<Documents> pages = documentsRepository.findByStudent(student, pageable);
+        if (pages.isEmpty()) {
+            throw new DocumentNotFoundException("No files found for this student");
+        }
+        return pages;
     }
-    
-    
-    
-    // Get a file by its ID
+
+    // Retrieve file by ID
     public Documents getFileById(Long fileId) {
         return documentsRepository.findById(fileId)
                 .orElseThrow(() -> new DocumentNotFoundException("Document with ID " + fileId + " not found"));
     }
 
-    
+    // Delete a file from both the database and filesystem
     public void deleteFile(Long id) {
-        if (!documentsRepository.existsById(id)) {
-            throw new DocumentNotFoundException("Document with ID " + id + " not found");
-        }
-        documentsRepository.deleteById(id);
-    }
-    
-    
-    
-    
-    public Resource getFileResource(Long fileId) {
-        Documents document = documentsRepository.findById(fileId)
-            .orElseThrow(() -> new DocumentNotFoundException("Document with ID " + fileId + " not found"));
-
+        Documents document = getFileById(id);
         Path filePath = Paths.get(document.getFilePath());
+
+        try {
+            Files.deleteIfExists(filePath); // Delete file from disk
+        } catch (IOException e) {
+            throw new FileStorageException("Error deleting file from disk", e);
+        }
+
+        documentsRepository.deleteById(id); // Delete from database
+    }
+
+    // Retrieve file resource for downloading
+    public Resource getFileResource(Long fileId) {
+        Documents document = getFileById(fileId);
+        Path filePath = Paths.get(document.getFilePath());
+
         try {
             Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists() || !resource.isReadable()) {
@@ -114,23 +126,23 @@ public class DocumentsService {
             }
             return resource;
         } catch (Exception e) {
-            throw new FileStorageException("Error while retrieving file", e);
+            throw new FileStorageException("Error retrieving file", e);
         }
     }
 
+    // Get file type by ID
     public String getFileType(Long fileId) {
         return documentsRepository.findById(fileId)
-            .map(Documents::getType)
-            .orElse("application/octet-stream"); // Default type if not found
+                .map(Documents::getType)
+                .orElse("application/octet-stream"); // Default type
     }
 
+    // Get file name by ID
     public String getFileName(Long fileId) {
         return documentsRepository.findById(fileId)
-            .map(Documents::getName)
-            .orElse("unknown_file");
+                .map(Documents::getName)
+                .orElse("unknown_file");
     }
-    
-    
     
     
     

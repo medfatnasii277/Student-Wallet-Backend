@@ -1,4 +1,4 @@
-package StudentWallet.StudentWallet.Model;
+package StudentWallet.StudentWallet.controller;
 
 import java.util.ArrayList;
 import java.util.List;

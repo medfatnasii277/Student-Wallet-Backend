@@ -10,20 +10,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 
+
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+
 import java.security.Principal;
-import java.util.List;
-import java.util.Optional;
+
 
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+
 
 
 
@@ -31,47 +36,59 @@ import org.springframework.http.ResponseEntity;
 @RestController
 public class DocumentsController {
 
-    @Autowired
-    private DocumentsService documentsService;
+    private final DocumentsService documentsService;
+    private final MyStudentRepo studentService;
 
     @Autowired
-    private MyStudentRepo studentService;
+    public DocumentsController(DocumentsService documentsService, MyStudentRepo studentService) {
+        this.documentsService = documentsService;
+        this.studentService = studentService;
+    }
 
     // Upload a file
     @PostMapping("/upload")
     public ResponseEntity<Documents> uploadFile(@RequestParam("file") MultipartFile file, Principal principal) throws IOException {
-       Student student = studentService.findByUsername(principal.getName())
-    		   .orElseThrow(() -> new RuntimeException("User not found"));
+        Student student = studentService.findByUsername(principal.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
         Documents uploadedDocument = documentsService.uploadFile(file, student);
-        return ResponseEntity.ok(uploadedDocument);
+        return ResponseEntity.status(HttpStatus.CREATED).body(uploadedDocument);
     }
 
- 
+    // Get all files of the authenticated user
     @GetMapping("/my-files")
-    public ResponseEntity<List<Documents>> getMyFiles(Principal principal) {
-        Student student = studentService.findByUsername(principal.getName()).get();
-        List<Documents> files = documentsService.getFilesByStudent(student);
+    public ResponseEntity<Page<Documents>> getMyFiles(
+            Principal principal,
+            @RequestParam(defaultValue  = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        
+        Student student = studentService.findByUsername(principal.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Documents> files = documentsService.getFilesByStudent(student, pageable);
+
         return ResponseEntity.ok(files);
     }
-    
-    
+
+    // Download a file
     @GetMapping("/download/{fileId}")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId) {
         Resource fileResource = documentsService.getFileResource(fileId);
+        String contentType = documentsService.getFileType(fileId);
+        String fileName = documentsService.getFileName(fileId);
 
         return ResponseEntity.ok()
-            .contentType(MediaType.parseMediaType(documentsService.getFileType(fileId)))
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + documentsService.getFileName(fileId) + "\"")
-            .body(fileResource);
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(fileResource);
     }
-    
-    
+
+    // Delete a file
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> deleteFile(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
         documentsService.deleteFile(id);
-        return ResponseEntity.ok("Document with ID " + id + " deleted successfully");
+        return ResponseEntity.noContent().build(); // 204 No Content for successful deletion
     }
-    
-    
     
 }

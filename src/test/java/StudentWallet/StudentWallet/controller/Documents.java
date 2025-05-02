@@ -1,4 +1,4 @@
-package StudentWallet.StudentWallet.Model;
+package StudentWallet.StudentWallet.controller;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
