@@ -48,10 +48,10 @@ public class Documents {
 
     @NotNull
     @Size(min=3)
-	private String name; // Original file name
-    private String type; // File type (e.g., txt, pdf, etc.)
-    private String filePath; // Path to the file on the server
-    private LocalDateTime uploadDate; // Timestamp of upload
+	private String name;
+    private String type;
+    private String filePath;
+    private LocalDateTime uploadDate;
 
 
     

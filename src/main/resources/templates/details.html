@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Wallet - Student Details</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <!-- Alert messages -->
+    <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            <h1>Student Details</h1>
+        </div>
+        <div class="col-auto">
+            <a th:href="@{/students}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Profile Information</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <div th:if="${student.profilePicture != null}">
+                            <img th:src="@{'/uploads/' + ${student.profilePicture}}" alt="Profile"
+                                 class="rounded-circle img-fluid" style="max-width: 150px;">
+                        </div>
+                        <div th:if="${student.profilePicture == null}"
+                             class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                             style="width: 150px; height: 150px; color: white;">
+                            <i class="fas fa-user fa-5x"></i>
+                        </div>
+                    </div>
+                    <h4 th:text="${student.name}"></h4>
+                    <p class="text-muted" th:text="${student.username}"></p>
+
+                    <div class="mb-2">
+                        <span class="badge bg-danger" th:if="${student.role == 'ROLE_BANNED'}">Banned</span>
+                        <span class="badge bg-success" th:if="${student.role == 'ROLE_USER'}">User</span>
+                        <span class="badge bg-primary" th:if="${student.role == 'ROLE_ADMIN'}">Admin</span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a th:href="@{/students/edit/{id}(id=${student.id})}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Student Documents</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" th:if="${documents == null || documents.isEmpty()}">
+                        No documents found for this student.
+                    </div>
+
+                    <div class="table-responsive" th:if="${documents != null && !documents.isEmpty()}">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Upload Date</th>
+                                    <th>Tags</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="doc : ${documents}">
+                                    <td th:text="${doc.name}"></td>
+                                    <td th:text="${doc.type}"></td>
+                                    <td th:text="${#temporals.format(doc.uploadDate, 'yyyy-MM-dd HH:mm')}"></td>
+                                    <td>
+                                        <span th:each="tag : ${doc.docTag}" 
+                                              class="badge bg-info me-1" 
+                                              th:text="${tag.name}">
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a th:href="@{'/uploads/' + ${doc.filePath}}" 
+                                               class="btn btn-sm btn-primary" 
+                                               target="_blank">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <a th:href="@{/students/delete-document/{id}(id=${doc.id})}" 
+                                               class="btn btn-sm btn-danger"
+                                               onclick="return confirm('Are you sure you want to delete this document?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                        <!-- Pagination for documents -->
+                        <nav th:if="${totalPages > 1}">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/students/details/{id}(id=${student.id}, page=${currentPage - 1})}">&laquo;</a>
+                                </li>
+                                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                    th:classappend="${currentPage == i} ? 'active'">
+                                    <a class="page-link" th:href="@{/students/details/{id}(id=${student.id}, page=${i})}" th:text="${i + 1}"></a>
+                                </li>
+                                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/students/details/{id}(id=${student.id}, page=${currentPage + 1})}">&raquo;</a>
+                                </li>
+                            </ul>
+                        </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

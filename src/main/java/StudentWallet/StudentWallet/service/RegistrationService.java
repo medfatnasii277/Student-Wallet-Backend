@@ -3,7 +3,9 @@ package StudentWallet.StudentWallet.service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,23 +60,60 @@ public class RegistrationService {
     @Transactional
     public Student registerUser(String userJson, MultipartFile file) {
         try {
+
             ObjectMapper objectMapper = new ObjectMapper();
             Student user = objectMapper.readValue(userJson, Student.class);
 
+
+            if (user.getName() == null || user.getUsername() == null || user.getPassword() == null) {
+                throw new InvalidUserFormatException("Missing required fields");
+            }
+
+
+            if (studentRepo.findByUsername(user.getUsername()).isPresent()) {
+                throw new InvalidUserFormatException("Username already exists");
+            }
+
+
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             
-            if (user.getRole() == null ) {
-                user.setRole("USER");
+
+            if (user.getRole() == null || user.getRole().isEmpty()) {
+                user.setRole("ROLE_USER");
+            } else {
+
+                String role = user.getRole();
+                if (!role.startsWith("ROLE_")) {
+                    role = "ROLE_" + role;
+                }
+
+                if (!role.matches("^(ROLE_USER|ROLE_ADMIN|ROLE_BANNED)$")) {
+                    throw new InvalidUserFormatException("Invalid role format. Must be ROLE_USER, ROLE_ADMIN, or ROLE_BANNED");
+                }
+                user.setRole(role);
             }
             
-            if (file != null && !file.isEmpty()) {
-                String safeFileName = Paths.get(file.getOriginalFilename()).getFileName().toString();
-                String filePath = uploadDir + File.separator + safeFileName;
 
-                Files.createDirectories(Paths.get(uploadDir));
-                file.transferTo(new File(filePath));
-                user.setProfilePicture(filePath);
+            if (file != null && !file.isEmpty()) {
+
+                Path uploadPath = Paths.get(uploadDir);
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                }
+
+
+                String originalFilename = file.getOriginalFilename();
+                String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                String filename = UUID.randomUUID().toString() + extension;
+                
+
+                Path filePath = uploadPath.resolve(filename);
+                Files.copy(file.getInputStream(), filePath);
+                
+
+                user.setProfilePicture(filename);
             }
+
 
             return studentRepo.save(user);
         } catch (IOException e) {

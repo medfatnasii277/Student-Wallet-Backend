@@ -38,8 +38,7 @@ public class StudentController {
     
     @Value("${file.upload-dir}") // Configure this in application.properties
     private String uploadDir;
-    
-    // Display all students with pagination
+
     @GetMapping("/students")
     public String getAllStudents(Model model,
                                 @RequestParam(defaultValue = "0") int page,
@@ -55,14 +54,12 @@ public class StudentController {
         return "student-list";
     }
     
-    // Display form for adding a new student
     @GetMapping("/students/add")
     public String showAddStudentForm(Model model) {
         model.addAttribute("student", new Student());
         return "student-form";
     }
     
-    // Process the form submission for adding a student
     @PostMapping("/students/add")
     public String addStudent(@Valid @ModelAttribute("student") Student student,
                             BindingResult result,
@@ -70,7 +67,6 @@ public class StudentController {
                             RedirectAttributes redirectAttributes,
                             Model model) {
         
-        // Check for validation errors
         if (result.hasErrors()) {
             return "student-form";
         }
@@ -86,7 +82,6 @@ public class StudentController {
         return "redirect:/admin/students";
     }
     
-    // Display form for editing a student
     @GetMapping("/students/edit/{id}")
     public String showEditStudentForm(@PathVariable Long id, Model model) {
         Student student = studentService.getStudentById(id)
@@ -96,7 +91,6 @@ public class StudentController {
         return "student-form";
     }
     
-    // Process the ban/unban action
     @PostMapping("/students/toggle-ban/{id}")
     public String toggleBanStudent(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         Student student = studentService.toggleBan(id);
@@ -108,7 +102,6 @@ public class StudentController {
         return "redirect:/admin/students";
     }
     
-    // Delete a student
     @PostMapping("/students/delete/{id}")
     public String deleteStudent(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         studentService.deleteStudent(id);
@@ -126,7 +119,6 @@ public class StudentController {
         return "student-details";
     }
     
-    // Serve profile picture
     @GetMapping("/profile-picture/{filename}")
     @ResponseBody
     public ResponseEntity<byte[]> getProfilePicture(@PathVariable String filename) {
@@ -134,7 +126,6 @@ public class StudentController {
             Path imagePath = Paths.get(uploadDir + filename);
             byte[] imageBytes = Files.readAllBytes(imagePath);
             
-            // Determine the content type based on file extension
             String contentType = determineContentType(filename);
             
             return ResponseEntity.ok()
@@ -145,7 +136,6 @@ public class StudentController {
         }
     }
     
-    // Helper method to determine content type from filename
     private String determineContentType(String filename) {
         if (filename.endsWith(".png")) {
             return "image/png";
@@ -157,14 +147,5 @@ public class StudentController {
         return "application/octet-stream";
     }
     
-    // Admin dashboard
-    @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        long studentCount = studentService.countStudents();
-        model.addAttribute("studentCount", studentCount);
-        
-        // Add more statistics as needed
-        
-        return "dashboard";
-    }
+
 }

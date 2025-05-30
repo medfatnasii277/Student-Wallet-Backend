@@ -45,7 +45,7 @@ public class DocumentsController {
         this.studentService = studentService;
     }
 
-    // Upload a file
+
     @PostMapping("/upload")
     public ResponseEntity<Documents> uploadFile(@RequestParam("file") MultipartFile file, Principal principal) throws IOException {
         Student student = studentService.findByUsername(principal.getName())
@@ -55,7 +55,7 @@ public class DocumentsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(uploadedDocument);
     }
 
-    // Get all files of the authenticated user
+
     @GetMapping("/my-files")
     public ResponseEntity<Page<Documents>> getMyFiles(
             Principal principal,
@@ -71,7 +71,7 @@ public class DocumentsController {
         return ResponseEntity.ok(files);
     }
 
-    // Download a file
+
     @GetMapping("/download/{fileId}")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId) {
         Resource fileResource = documentsService.getFileResource(fileId);
@@ -84,7 +84,7 @@ public class DocumentsController {
                 .body(fileResource);
     }
 
-    // Delete a file
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
         documentsService.deleteFile(id);

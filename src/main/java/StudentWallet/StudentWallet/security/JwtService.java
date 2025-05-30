@@ -51,11 +51,11 @@ public class JwtService {
 	    }
 
 	    private Claims getClaims(String jwt) {
-	        return Jwts.parserBuilder() // Create a JwtParserBuilder
-	                .setSigningKey(generateKey()) // Set the signing key for verification
-	                .build() // Build the parser
-	                .parseClaimsJws(jwt) // Parse the token and validate the signature
-	                .getBody(); // Extract the claims (payload) from the token
+	        return Jwts.parserBuilder()
+	                .setSigningKey(generateKey())
+	                .build()
+	                .parseClaimsJws(jwt)
+	                .getBody();
 	    }
 
 	    public boolean isTokenValid(String jwt) {

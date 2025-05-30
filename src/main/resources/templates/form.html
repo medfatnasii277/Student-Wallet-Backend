@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Wallet - Student Form</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+
+
+    <!-- Alert messages -->
+    <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            <h1 th:text="${isNewStudent ? 'Add New Student' : 'Edit Student'}"></h1>
+        </div>
+        <div class="col-auto">
+            <a th:href="@{/students}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+
+            <form th:if="${isNewStudent}" 
+                  th:action="@{/students}" 
+                  th:object="${student}" 
+                  method="post" 
+                  enctype="multipart/form-data">
+                
+                <input type="hidden" th:field="*{id}" />
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="name" 
+                               th:field="*{name}" 
+                               required
+                               minlength="3"
+                               maxlength="50"
+                               pattern="^[a-zA-Z\s]{3,50}$"
+                               title="Name must be between 3 and 50 characters and contain only letters and spaces">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        <div class="form-text">Enter your full name (3-50 characters)</div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="username" 
+                               th:field="*{username}" 
+                               required
+                               minlength="3"
+                               maxlength="20"
+                               pattern="^[a-zA-Z0-9._-]+$"
+                               title="Username can only contain letters, numbers, dots, underscores and hyphens">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                        <div class="form-text">Choose a username (3-20 characters)</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="password" 
+                               th:field="*{password}" 
+                               required
+                               minlength="8"
+                               pattern="^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$"
+                               title="Password must contain at least one digit, one uppercase letter, one lowercase letter, and one special character">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        <div class="form-text">
+                            Password must be at least 8 characters long and contain:
+                            <ul class="mb-0">
+                                <li>At least one digit</li>
+                                <li>At least one uppercase letter</li>
+                                <li>At least one lowercase letter</li>
+                                <li>At least one special character (@#$%^&+=)</li>
+                            </ul>
+                        </div>
+                    </div>Hibernate: select nextval('student_seq')
+
+                    
+                    <div class="col-md-6">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" 
+                                id="role" 
+                                th:field="*{role}" 
+                                required>
+                            <option value="">Select a role</option>
+                            <option value="ROLE_USER">User</option>
+                            <option value="ROLE_ADMIN">Admin</option>
+                        </select>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></div>
+                        <div class="form-text">Select the user's role</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="profilePictureFile" class="form-label">Profile Picture</label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="profilePictureFile" 
+                               th:field="*{profilePictureFile}" 
+                               accept="image/*">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <form th:unless="${isNewStudent}"
+                  th:action="@{'/students/update/' + ${student.id}}" 
+                  th:object="${student}" 
+                  method="post" 
+                  enctype="multipart/form-data">
+                
+                <input type="hidden" th:field="*{id}" />
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="name" 
+                               th:field="*{name}" 
+                               required
+                               minlength="3"
+                               maxlength="50"
+                               pattern="^[a-zA-Z\s]{3,50}$"
+                               title="Name must be between 3 and 50 characters and contain only letters and spaces">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        <div class="form-text">Enter your full name (3-50 characters)</div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="username" 
+                               th:field="*{username}" 
+                               required
+                               minlength="3"
+                               maxlength="20"
+                               pattern="^[a-zA-Z0-9._-]+$"
+                               title="Username can only contain letters, numbers, dots, underscores and hyphens">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                        <div class="form-text">Choose a username (3-20 characters)</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="password" 
+                               th:field="*{password}" 
+                               required
+                               minlength="8"
+                               pattern="^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$"
+                               title="Password must contain at least one digit, one uppercase letter, one lowercase letter, and one special character">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        <div class="form-text">
+                            Password must be at least 8 characters long and contain:
+                            <ul class="mb-0">
+                                <li>At least one digit</li>
+                                <li>At least one uppercase letter</li>
+                                <li>At least one lowercase letter</li>
+                                <li>At least one special character (@#$%^&+=)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" 
+                                id="role" 
+                                th:field="*{role}" 
+                                required>
+                            <option value="">Select a role</option>
+                            <option value="ROLE_USER">User</option>
+                            <option value="ROLE_ADMIN">Admin</option>
+                        </select>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></div>
+                        <div class="form-text">Select the user's role</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="profilePictureFile" class="form-label">Profile Picture</label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="profilePictureFile" 
+                               th:field="*{profilePictureFile}" 
+                               accept="image/*">
+                        <div class="mt-2" th:if="${student.profilePicture != null}">
+                            <img th:src="@{'/uploads/' + ${student.profilePicture}}" 
+                                 alt="Current Profile Picture" 
+                                 class="img-thumbnail" 
+                                 style="max-width: 100px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all forms we want to apply validation to
+    const forms = document.querySelectorAll('form');
+    
+    // Loop over them and prevent submission
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+
+    // Password strength indicator
+    const passwordInput = document.getElementById('password');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let strength = 0;
+            
+            // Length check
+            if (password.length >= 8) strength++;
+            
+            // Contains number
+            if (/\d/.test(password)) strength++;
+            
+            // Contains lowercase
+            if (/[a-z]/.test(password)) strength++;
+            
+            // Contains uppercase
+            if (/[A-Z]/.test(password)) strength++;
+            
+            // Contains special character
+            if (/[@#$%^&+=]/.test(password)) strength++;
+            
+            // Update strength indicator
+            const strengthIndicator = document.createElement('div');
+            strengthIndicator.className = 'progress mt-2';
+            strengthIndicator.innerHTML = `
+                <div class="progress-bar ${strength <= 2 ? 'bg-danger' : strength <= 3 ? 'bg-warning' : 'bg-success'}" 
+                     role="progressbar" 
+                     style="width: ${(strength / 5) * 100}%" 
+                     aria-valuenow="${(strength / 5) * 100}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            `;
+            
+            const existingIndicator = this.parentElement.querySelector('.progress');
+            if (existingIndicator) {
+                existingIndicator.remove();
+            }
+            this.parentElement.appendChild(strengthIndicator);
+        });
+    }
+});
+</script>
+</body>
+</html>

@@ -47,25 +47,25 @@ public class DocumentsService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-    // Upload a file
+
     public Documents uploadFile(MultipartFile file, Student student) throws IOException {
-        // Ensure the upload directory exists
+
         Path uploadPath = Paths.get(uploadDir);
         Files.createDirectories(uploadPath);
 
-        // Generate a unique file name
+
         String uniqueFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
         Path filePath = uploadPath.resolve(uniqueFileName).normalize(); // Normalize path for security
 
-        // Prevent path traversal attack
+
         if (!filePath.getParent().equals(uploadPath.toAbsolutePath())) {
             throw new SecurityException("Invalid file path detected");
         }
 
-        // Save file securely
+
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Create document object
+
         Documents document = new Documents();
         document.setName(uniqueFileName);
         document.setType(file.getContentType());
@@ -73,7 +73,7 @@ public class DocumentsService {
         document.setUploadDate(LocalDateTime.now());
         document.setStudent(student);
 
-        // Associate tags
+
         DocumentsTag docTag = tagRepo.findByName(file.getContentType());
         if (docTag == null) {
             docTag = new DocumentsTag();

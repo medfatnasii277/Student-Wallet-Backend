@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Wallet - Students List</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <!-- Alert messages -->
+    <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            <h1>Students List</h1>
+        </div>
+        <div class="col-auto">
+            <a th:href="@{/students/new}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Student
+            </a>
+            <a th:if="${isAdmin}" th:href="@{/students/admin/dashboard}" class="btn btn-secondary ms-2">
+                <i class="fas fa-chart-line"></i> Admin Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search form -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form th:action="@{/students}" method="get" class="d-flex">
+                <input type="text" name="search" class="form-control me-2" 
+                       th:value="${searchQuery}" placeholder="Search by username">
+                <input type="hidden" name="sort" th:value="${sortField}">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <div class="float-end">
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Sort By
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" th:href="@{/students(sort='id', search=${searchQuery})}"
+                               th:classappend="${sortField == 'id'} ? 'active'">
+                                ID
+                                <i class="fas fa-sort" th:if="${sortField != 'id'}"></i>
+                                <i class="fas fa-sort-up" th:if="${sortField == 'id'}"></i>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" th:href="@{/students(sort='username', search=${searchQuery})}"
+                               th:classappend="${sortField == 'username'} ? 'active'">
+                                Username
+                                <i class="fas fa-sort" th:if="${sortField != 'username'}"></i>
+                                <i class="fas fa-sort-up" th:if="${sortField == 'username'}"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info" th:if="${students.isEmpty()}">
+        No students found. Click "Add New Student" to create one.
+    </div>
+
+    <div th:if="${!students.isEmpty()}">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                <tr>
+                    <th>
+                        <a th:href="@{/students(sort='id', search=${searchQuery})}" class="text-white text-decoration-none">
+                            ID
+                            <i class="fas fa-sort" th:if="${sortField != 'id'}"></i>
+                            <i class="fas fa-sort-up" th:if="${sortField == 'id'}"></i>
+                        </a>
+                    </th>
+                    <th>Name</th>
+                    <th>
+                        <a th:href="@{/students(sort='username', search=${searchQuery})}" class="text-white text-decoration-none">
+                            Username
+                            <i class="fas fa-sort" th:if="${sortField != 'username'}"></i>
+                            <i class="fas fa-sort-up" th:if="${sortField == 'username'}"></i>
+                        </a>
+                    </th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="student : ${students}">
+                    <td th:text="${student.id}"></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0" th:if="${student.profilePicture != null}">
+                                <img th:src="@{'/uploads/' + ${student.profilePicture}}" alt="Profile"
+                                     class="rounded-circle" width="40" height="40">
+                            </div>
+                            <div class="flex-shrink-0" th:if="${student.profilePicture == null}">
+                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center"
+                                     style="width: 40px; height: 40px; color: white;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+                            <div class="ms-3">
+                                <span th:text="${student.name}"></span>
+                            </div>
+                        </div>
+                    </td>
+                    <td th:text="${student.username}"></td>
+                    <td>
+                        <span class="badge bg-danger" th:if="${student.role == 'ROLE_BANNED'}">Banned</span>
+                        <span class="badge bg-success" th:if="${student.role == 'ROLE_USER'}">User</span>
+                        <span class="badge bg-primary" th:if="${student.role == 'ROLE_ADMIN'}">Admin</span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a th:href="@{/students/details/{id}(id=${student.id})}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a th:href="@{/students/edit/{id}(id=${student.id})}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a th:if="${isAdmin}" th:href="@{/students/toggle-ban/{id}(id=${student.id})}"
+                               class="btn btn-sm" th:classappend="${student.role == 'ROLE_BANNED'} ? 'btn-success' : 'btn-danger'"
+                               th:title="${student.role == 'ROLE_BANNED'} ? 'Unban Student' : 'Ban Student'"
+                               onclick="return confirm('Are you sure you want to change ban status?')">
+                                <i class="fas" th:classappend="${student.role == 'ROLE_BANNED'} ? 'fa-unlock' : 'fa-ban'"></i>
+                            </a>
+                            <a th:href="@{/students/delete/{id}(id=${student.id})}" class="btn btn-sm btn-danger"
+                               onclick="return confirm('Are you sure you want to delete this student?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <nav th:if="${totalPages > 1}">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link" 
+                       th:href="@{/students(page=${currentPage - 1}, size=10, sort=${sortField}, search=${searchQuery})}">&laquo; Previous</a>
+                </li>
+
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                    th:classappend="${currentPage == i} ? 'active'"
+                    th:if="${i < 5 || i > totalPages - 6 || (i >= currentPage - 1 && i <= currentPage + 1)}">
+                    <a class="page-link" 
+                       th:href="@{/students(page=${i}, size=10, sort=${sortField}, search=${searchQuery})}" 
+                       th:text="${i + 1}"></a>
+                </li>
+
+                <li class="page-item disabled" th:if="${currentPage > 3 && totalPages > 7}">
+                    <span class="page-link">...</span>
+                </li>
+
+                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                    <a class="page-link" 
+                       th:href="@{/students(page=${currentPage + 1}, size=10, sort=${sortField}, search=${searchQuery})}">Next &raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
