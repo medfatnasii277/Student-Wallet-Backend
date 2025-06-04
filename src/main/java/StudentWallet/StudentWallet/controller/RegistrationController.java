@@ -35,6 +35,7 @@ import StudentWallet.StudentWallet.service.StudentService;
 @Validated
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 public class RegistrationController {
 
     private final MyStudentRepo studentRepo;

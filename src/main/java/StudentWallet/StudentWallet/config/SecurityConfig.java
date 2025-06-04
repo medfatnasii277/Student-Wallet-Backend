@@ -97,7 +97,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                             "download/**",
                             "delete/**",
                             "/profile-picture"
-                    ).hasRole("USER");
+                    ).permitAll();
 
                     registry.requestMatchers(
                                     "/admin" )
