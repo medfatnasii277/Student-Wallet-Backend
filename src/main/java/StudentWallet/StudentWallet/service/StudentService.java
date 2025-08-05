@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import StudentWallet.StudentWallet.Model.Student;
 import StudentWallet.StudentWallet.Repository.MyStudentRepo;
+import StudentWallet.StudentWallet.Dto.ProfileUpdateDTO;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -152,5 +153,72 @@ public class StudentService {
 		return studentRepo.findByUsernameContainingIgnoreCase(searchTerm, pageable);
 	}
 
+	@Transactional
+	public Student updateProfile(String username, ProfileUpdateDTO profileUpdate) {
+		Student student = studentRepo.findByUsername(username)
+				.orElseThrow(() -> new RuntimeException("User not found"));
+		
+		// Update only the fields that are provided (not null and not empty)
+		if (profileUpdate.getSchool() != null) {
+			student.setSchool(profileUpdate.getSchool().trim().isEmpty() ? null : profileUpdate.getSchool().trim());
+		}
+		if (profileUpdate.getSpecialty() != null) {
+			student.setSpecialty(profileUpdate.getSpecialty().trim().isEmpty() ? null : profileUpdate.getSpecialty().trim());
+		}
+		if (profileUpdate.getInterests() != null) {
+			student.setInterests(profileUpdate.getInterests().trim().isEmpty() ? null : profileUpdate.getInterests().trim());
+		}
+		if (profileUpdate.getBio() != null) {
+			student.setBio(profileUpdate.getBio().trim().isEmpty() ? null : profileUpdate.getBio().trim());
+		}
+		if (profileUpdate.getEmail() != null) {
+			student.setEmail(profileUpdate.getEmail().trim().isEmpty() ? null : profileUpdate.getEmail().trim());
+		}
+		if (profileUpdate.getPhoneNumber() != null) {
+			student.setPhoneNumber(profileUpdate.getPhoneNumber().trim().isEmpty() ? null : profileUpdate.getPhoneNumber().trim());
+		}
+		if (profileUpdate.getYearOfStudy() != null) {
+			student.setYearOfStudy(profileUpdate.getYearOfStudy().trim().isEmpty() ? null : profileUpdate.getYearOfStudy().trim());
+		}
+		if (profileUpdate.getCity() != null) {
+			student.setCity(profileUpdate.getCity().trim().isEmpty() ? null : profileUpdate.getCity().trim());
+		}
+		
+		return studentRepo.save(student);
+	}
+
+	public Map<String, Object> getFullProfile(String username) throws IOException {
+		Student student = studentRepo.findByUsername(username)
+				.orElseThrow(() -> new RuntimeException("User not found"));
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("id", student.getId());
+		response.put("username", student.getUsername());
+		response.put("name", student.getName());
+		response.put("school", student.getSchool());
+		response.put("specialty", student.getSpecialty());
+		response.put("interests", student.getInterests());
+		response.put("bio", student.getBio());
+		response.put("email", student.getEmail());
+		response.put("phoneNumber", student.getPhoneNumber());
+		response.put("yearOfStudy", student.getYearOfStudy());
+		response.put("city", student.getCity());
+
+		// Handle profile picture
+		if (student.getProfilePicture() != null && !student.getProfilePicture().isEmpty()) {
+			File file = new File(uploadDir + "/" + student.getProfilePicture());
+			if (file.exists()) {
+				byte[] imageBytes = Files.readAllBytes(file.toPath());
+				String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+				response.put("profilePicture", base64Image);
+			} else {
+				response.put("profilePicture", null);
+			}
+		} else {
+			response.put("profilePicture", null);
+		}
+
+		return response;
+	}
 
 }

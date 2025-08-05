@@ -1,12 +1,13 @@
 package StudentWallet.StudentWallet.service;
 
-import StudentWallet.StudentWallet.Exception.DocumentNotFoundException;
-import StudentWallet.StudentWallet.Exception.FileStorageException;
-import StudentWallet.StudentWallet.Model.Documents;
-import StudentWallet.StudentWallet.Model.DocumentsTag;
-import StudentWallet.StudentWallet.Model.Student;
-import StudentWallet.StudentWallet.Repository.DocumentsRepo;
-import StudentWallet.StudentWallet.Repository.documentsTagRepository;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,26 +15,16 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import StudentWallet.StudentWallet.Exception.DocumentNotFoundException;
+import StudentWallet.StudentWallet.Exception.FileStorageException;
+import StudentWallet.StudentWallet.Model.Documents;
+import StudentWallet.StudentWallet.Model.DocumentsTag;
+import StudentWallet.StudentWallet.Model.Student;
+import StudentWallet.StudentWallet.Repository.DocumentsRepo;
+import StudentWallet.StudentWallet.Repository.documentsTagRepository;
 
 @Service
 public class DocumentsService {

@@ -15,15 +15,18 @@ import org.springframework.http.ResponseEntity;
 
 
 import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import StudentWallet.StudentWallet.Dto.LoginForm;
+import StudentWallet.StudentWallet.Dto.ProfileUpdateDTO;
 import StudentWallet.StudentWallet.Model.Student;
 import StudentWallet.StudentWallet.Repository.MyStudentRepo;
 import StudentWallet.StudentWallet.service.RegistrationService;
@@ -80,6 +83,20 @@ public class RegistrationController {
             String token = registrationService.authenticateUser(loginForm);
             return ResponseEntity.ok(token);
         
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<Map<String, Object>> getFullProfile(Principal principal) throws IOException {
+        return ResponseEntity.ok(studentService.getFullProfile(principal.getName()));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<Map<String, Object>> updateProfile(
+            @Valid @RequestBody ProfileUpdateDTO profileUpdate, 
+            Principal principal) throws IOException {
+        
+        studentService.updateProfile(principal.getName(), profileUpdate);
+        return ResponseEntity.ok(studentService.getFullProfile(principal.getName()));
     }
 
 }

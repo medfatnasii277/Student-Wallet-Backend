@@ -96,7 +96,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                             "upload/**",
                             "download/**",
                             "delete/**",
-                            "/profile-picture"
+                            "/profile-picture",
+                            "/profile"
                     ).permitAll();
 
                     registry.requestMatchers(

@@ -46,6 +46,16 @@ public class Student {
 	private List<Documents> documents = new ArrayList<>();
     private String ProfilePicture;
     
+    // Additional profile fields (optional)
+    private String school;
+    private String specialty;
+    private String interests;
+    private String bio;
+    private String email;
+    private String phoneNumber;
+    private String yearOfStudy;
+    private String city;
+    
     @Transient
     private MultipartFile profilePictureFile;
     
@@ -111,6 +121,71 @@ public class Student {
 	}
 	public void setProfilePictureFile(MultipartFile profilePictureFile) {
 		this.profilePictureFile = profilePictureFile;
+	}
+
+	// Getters and setters for additional profile fields
+	public String getSchool() {
+		return school;
+	}
+
+	public void setSchool(String school) {
+		this.school = school;
+	}
+
+	public String getSpecialty() {
+		return specialty;
+	}
+
+	public void setSpecialty(String specialty) {
+		this.specialty = specialty;
+	}
+
+	public String getInterests() {
+		return interests;
+	}
+
+	public void setInterests(String interests) {
+		this.interests = interests;
+	}
+
+	public String getBio() {
+		return bio;
+	}
+
+	public void setBio(String bio) {
+		this.bio = bio;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
+
+	public String getYearOfStudy() {
+		return yearOfStudy;
+	}
+
+	public void setYearOfStudy(String yearOfStudy) {
+		this.yearOfStudy = yearOfStudy;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
 	}
 
 }
