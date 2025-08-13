@@ -74,24 +74,10 @@ public class RegistrationService {
                 throw new InvalidUserFormatException("Username already exists");
             }
 
+            // Force default role for self-registration
+            user.setRole("ROLE_USER");
 
             user.setPassword(passwordEncoder.encode(user.getPassword()));
-            
-
-            if (user.getRole() == null || user.getRole().isEmpty()) {
-                user.setRole("ROLE_USER");
-            } else {
-
-                String role = user.getRole();
-                if (!role.startsWith("ROLE_")) {
-                    role = "ROLE_" + role;
-                }
-
-                if (!role.matches("^(ROLE_USER|ROLE_ADMIN|ROLE_BANNED)$")) {
-                    throw new InvalidUserFormatException("Invalid role format. Must be ROLE_USER, ROLE_ADMIN, or ROLE_BANNED");
-                }
-                user.setRole(role);
-            }
             
 
             if (file != null && !file.isEmpty()) {
