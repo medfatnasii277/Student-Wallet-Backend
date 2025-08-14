@@ -113,20 +113,28 @@ public class ChatService {
 
 		// Get all public rooms
 		for (ChatRoom r : roomRepo.findByIsPrivateFalseOrderByCreatedAtDesc()) {
-			out.add(new RoomSummary(r.getId(), r.getName(), r.isPrivate(), r.getCreator().getUsername(), r.getMembers().size()));
+			boolean isMember = r.getMembers().contains(me);
+			out.add(new RoomSummary(r.getId(), r.getName(), r.isPrivate(), r.getCreator().getUsername(), r.getMembers().size(), isMember));
 		}
 
 		// Get all private rooms (visible to everyone, but require password to join)
 		for (ChatRoom r : roomRepo.findByIsPrivateTrueOrderByCreatedAtDesc()) {
-			out.add(new RoomSummary(r.getId(), r.getName(), r.isPrivate(), r.getCreator().getUsername(), r.getMembers().size()));
+			boolean isMember = r.getMembers().contains(me);
+			out.add(new RoomSummary(r.getId(), r.getName(), r.isPrivate(), r.getCreator().getUsername(), r.getMembers().size(), isMember));
 		}
 
 		return out;
 	}
 
 	@Transactional(readOnly = true)
-	public List<ChatMessage> latest50(Long roomId) {
+	public List<ChatMessage> latest50(Long roomId, Student student) {
 		ChatRoom room = roomRepo.findById(roomId).orElseThrow(() -> new IllegalArgumentException("Room not found"));
+		
+		// Check if user can access this room (must be a member)
+		if (!room.getMembers().contains(student)) {
+			throw new IllegalArgumentException("You must join this room to view messages");
+		}
+		
 		return messageRepo.findByRoomOrderByCreatedAtDesc(room, PageRequest.of(0, 50));
 	}
 
@@ -135,4 +143,51 @@ public class ChatService {
 		ChatRoom room = roomRepo.findById(roomId).orElseThrow(() -> new IllegalArgumentException("Room not found"));
 		return room.getMembers().contains(student);
 	}
+
+        @Transactional
+        public void deleteRoom(Long roomId, Student student) {
+                ChatRoom room = roomRepo.findById(roomId).orElseThrow(() -> new IllegalArgumentException("Room not found"));
+                
+                // Only the creator can delete the room
+                if (!room.getCreator().getId().equals(student.getId())) {
+                        throw new IllegalArgumentException("Only the room creator can delete this room");
+                }
+                
+                // Delete all messages first (due to cascade)
+                messageRepo.deleteByRoom(room);
+                
+                // Delete the room
+                roomRepo.delete(room);
+        }
+        
+        @Transactional
+        public void leaveRoom(Long roomId, Student student) {
+                ChatRoom room = roomRepo.findById(roomId).orElseThrow(() -> new IllegalArgumentException("Room not found"));
+                
+                // Check if user is a member
+                if (!room.getMembers().contains(student)) {
+                        throw new IllegalArgumentException("You are not a member of this room");
+                }
+                
+                // Creator cannot leave their own room (they must delete it instead)
+                if (room.getCreator().getId().equals(student.getId())) {
+                        throw new IllegalArgumentException("Room creator cannot leave. Use delete room instead.");
+                }
+                
+                // Remove user from room members
+                room.getMembers().remove(student);
+                roomRepo.save(room);
+        }
+        
+        @Transactional(readOnly = true)
+        public List<Student> getRoomMembers(Long roomId, Student student) {
+                ChatRoom room = roomRepo.findById(roomId).orElseThrow(() -> new IllegalArgumentException("Room not found"));
+                
+                // Check if user is a member
+                if (!room.getMembers().contains(student)) {
+                        throw new IllegalArgumentException("You must be a member to view room members");
+                }
+                
+                return new ArrayList<>(room.getMembers());
+        }
 } 

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,7 +62,28 @@ public class ChatController {
 	}
 
 	@GetMapping("/{roomId}/messages/latest")
-	public ResponseEntity<List<ChatMessage>> latest(@PathVariable Long roomId) {
-		return ResponseEntity.ok(chatService.latest50(roomId));
+	public ResponseEntity<List<ChatMessage>> latest(@PathVariable Long roomId, Principal principal) {
+		Student me = studentRepo.findByUsername(principal.getName()).orElseThrow();
+		return ResponseEntity.ok(chatService.latest50(roomId, me));
+	}
+	
+	@DeleteMapping("/{roomId}")
+	public ResponseEntity<Void> deleteRoom(@PathVariable Long roomId, Principal principal) {
+		Student me = studentRepo.findByUsername(principal.getName()).orElseThrow();
+		chatService.deleteRoom(roomId, me);
+		return ResponseEntity.ok().build();
+	}
+	
+	@PostMapping("/{roomId}/leave")
+	public ResponseEntity<Void> leaveRoom(@PathVariable Long roomId, Principal principal) {
+		Student me = studentRepo.findByUsername(principal.getName()).orElseThrow();
+		chatService.leaveRoom(roomId, me);
+		return ResponseEntity.ok().build();
+	}
+	
+	@GetMapping("/{roomId}/members")
+	public ResponseEntity<List<Student>> getRoomMembers(@PathVariable Long roomId, Principal principal) {
+		Student me = studentRepo.findByUsername(principal.getName()).orElseThrow();
+		return ResponseEntity.ok(chatService.getRoomMembers(roomId, me));
 	}
 } 

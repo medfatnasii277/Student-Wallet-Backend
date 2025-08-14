@@ -31,12 +31,15 @@ public class ChatDtos {
 		public boolean isPrivate;
 		public String creatorUsername;
 		public int memberCount;
-		public RoomSummary(Long id, String name, boolean isPrivate, String creatorUsername, int memberCount) {
+		public boolean isCurrentUserMember;
+		
+		public RoomSummary(Long id, String name, boolean isPrivate, String creatorUsername, int memberCount, boolean isCurrentUserMember) {
 			this.id = id;
 			this.name = name;
 			this.isPrivate = isPrivate;
 			this.creatorUsername = creatorUsername;
 			this.memberCount = memberCount;
+			this.isCurrentUserMember = isCurrentUserMember;
 		}
 	}
 } 
