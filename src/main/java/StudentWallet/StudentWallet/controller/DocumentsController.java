@@ -71,7 +71,15 @@ public class DocumentsController {
 
 
     @GetMapping("/download/{fileId}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId) {
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId, Principal principal) {
+        Student student = studentService.findByUsername(principal.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        
+        // Check access control
+        if (!documentsService.hasAccessToDocument(fileId, student)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to this document");
+        }
+        
         Resource fileResource = documentsService.getFileResource(fileId);
         String contentType = documentsService.getFileType(fileId);
         String fileName = documentsService.getFileName(fileId);
@@ -84,7 +92,16 @@ public class DocumentsController {
 
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteFile(@PathVariable Long id, Principal principal) {
+        Student student = studentService.findByUsername(principal.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        
+        // Check if user owns the document
+        Documents document = documentsService.getFileById(id);
+        if (!document.getStudent().getId().equals(student.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own documents");
+        }
+        
         documentsService.deleteFile(id);
         return ResponseEntity.noContent().build(); // 204 No Content for successful deletion
     }

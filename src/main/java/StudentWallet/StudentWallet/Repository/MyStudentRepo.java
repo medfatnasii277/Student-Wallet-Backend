@@ -12,7 +12,7 @@ public interface MyStudentRepo extends JpaRepository<Student,Long> {
 	
 	Optional<Student> findByUsername(String username);
     Page<Student> findAll(Pageable pageable);
-
+    Optional<Student> findByEmail(String email);
 
     Page<Student> findByUsernameContainingIgnoreCase(String username, Pageable pageable);
 }

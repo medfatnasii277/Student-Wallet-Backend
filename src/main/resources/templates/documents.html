@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Wallet - Document Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            min-width: 18px;
+            text-align: center;
+        }
+        .document-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .document-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .shared-badge {
+            background-color: #17a2b8;
+        }
+        .owned-badge {
+            background-color: #28a745;
+        }
+        .notification-item {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+            margin-bottom: 10px;
+        }
+        .notification-item.unread {
+            border-left-color: #dc3545;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid mt-4">
+    <!-- Alert messages -->
+    <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-file-alt"></i> Document Management</h1>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    <i class="fas fa-upload"></i> Upload Document
+                </button>
+                <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#shareModal">
+                    <i class="fas fa-share-alt"></i> Share Document
+                </button>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-bell"></i> Notifications
+                        <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                        <h6 class="dropdown-header">Recent Notifications</h6>
+                        <div id="notificationsList">
+                            <div class="dropdown-item text-muted">Loading notifications...</div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-center" href="#" onclick="markAllAsRead()">
+                            <i class="fas fa-check-double"></i> Mark All as Read
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4" id="documentTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                <i class="fas fa-folder"></i> All Documents
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="owned-tab" data-bs-toggle="tab" data-bs-target="#owned" type="button" role="tab">
+                <i class="fas fa-user"></i> My Documents
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="shared-tab" data-bs-toggle="tab" data-bs-target="#shared" type="button" role="tab">
+                <i class="fas fa-share-alt"></i> Shared With Me
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="shared-by-me-tab" data-bs-toggle="tab" data-bs-target="#shared-by-me" type="button" role="tab">
+                <i class="fas fa-share-square"></i> Shared By Me
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="documentTabsContent">
+        <!-- All Documents Tab -->
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
+            <div class="row" id="allDocuments">
+                <!-- Documents will be loaded here -->
+            </div>
+        </div>
+
+        <!-- My Documents Tab -->
+        <div class="tab-pane fade" id="owned" role="tabpanel">
+            <div class="row" id="ownedDocuments">
+                <!-- Owned documents will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Shared With Me Tab -->
+        <div class="tab-pane fade" id="shared" role="tabpanel">
+            <div class="row" id="sharedDocuments">
+                <!-- Shared documents will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Shared By Me Tab -->
+        <div class="tab-pane fade" id="shared-by-me" role="tabpanel">
+            <div class="row" id="sharedByMeDocuments">
+                <!-- Documents shared by me will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Document Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="documentFile" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="documentFile" name="file" required>
+                        <div class="form-text">Maximum file size: 10MB</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="uploadDocument()">Upload</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Share Document Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Share Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="shareForm">
+                    <div class="mb-3">
+                        <label for="documentSelect" class="form-label">Select Document</label>
+                        <select class="form-select" id="documentSelect" required>
+                            <option value="">Choose a document to share...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="recipientEmail" class="form-label">Recipient Email</label>
+                        <input type="email" class="form-control" id="recipientEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shareMessage" class="form-label">Message (Optional)</label>
+                        <textarea class="form-control" id="shareMessage" rows="3" maxlength="500" 
+                                  placeholder="Add a personal message..."></textarea>
+                        <div class="form-text">Maximum 500 characters</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="shareDocument()">Share</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Details Modal -->
+<div class="modal fade" id="documentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Document Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="documentModalBody">
+                <!-- Document details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadBtn">Download</button>
+                <button type="button" class="btn btn-danger" id="deleteBtn" style="display: none;">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WebSocket and JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script th:inline="javascript">
+// Global variables
+let stompClient = null;
+let currentUser = /*[[${#authentication.name}]]*/ '';
+
+// Initialize WebSocket connection
+function connectWebSocket() {
+    const socket = new SockJS('/ws');
+    stompClient = Stomp.over(socket);
+    
+    stompClient.connect({}, function(frame) {
+        console.log('Connected to WebSocket');
+        
+        // Subscribe to user-specific notifications
+        stompClient.subscribe('/user/queue/notifications', function(notification) {
+            const data = JSON.parse(notification.body);
+            showNotification(data);
+            updateNotificationCount();
+        });
+        
+        // Subscribe to general notifications
+        stompClient.subscribe('/topic/notifications', function(notification) {
+            const data = JSON.parse(notification.body);
+            showNotification(data);
+            updateNotificationCount();
+        });
+    });
+}
+
+// Show notification
+function showNotification(notification) {
+    const toast = document.createElement('div');
+    toast.className = 'toast position-fixed top-0 end-0 m-3';
+    toast.style.zIndex = '9999';
+    
+    toast.innerHTML = `
+        <div class="toast-header">
+            <strong class="me-auto">${notification.title}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+            ${notification.message}
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove toast after it's hidden
+    toast.addEventListener('hidden.bs.toast', function() {
+        document.body.removeChild(toast);
+    });
+    
+    // Update notification count
+    updateNotificationCount();
+}
+
+// Load documents for a specific tab
+function loadDocuments(tabName) {
+    let endpoint = '';
+    let containerId = '';
+    
+    switch(tabName) {
+        case 'all':
+            endpoint = '/documents/accessible';
+            containerId = 'allDocuments';
+            break;
+        case 'owned':
+            endpoint = '/my-files';
+            containerId = 'ownedDocuments';
+            break;
+        case 'shared':
+            endpoint = '/documents/shared-with-me';
+            containerId = 'sharedDocuments';
+            break;
+        case 'shared-by-me':
+            endpoint = '/documents/shared-by-me';
+            containerId = 'sharedByMeDocuments';
+            break;
+    }
+    
+    fetch(endpoint)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById(containerId);
+            if (tabName === 'all') {
+                renderDocumentCards(data, container, true);
+            } else if (tabName === 'owned') {
+                renderDocumentCards(data.content || data, container, false);
+            } else {
+                renderSharedDocumentCards(data, container, tabName === 'shared');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading documents:', error);
+            document.getElementById(containerId).innerHTML = 
+                '<div class="col-12"><div class="alert alert-danger">Error loading documents</div></div>';
+        });
+}
+
+// Render document cards
+function renderDocumentCards(documents, container, showOwnership) {
+    if (!documents || documents.length === 0) {
+        container.innerHTML = '<div class="col-12"><div class="alert alert-info">No documents found</div></div>';
+        return;
+    }
+    
+    container.innerHTML = documents.map(doc => `
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card document-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0">${doc.name}</h6>
+                        <div>
+                            ${showOwnership ? 
+                                `<span class="badge ${doc.isOwner ? 'owned-badge' : 'shared-badge'}">
+                                    ${doc.isOwner ? 'Owned' : 'Shared'}
+                                </span>` : ''
+                            }
+                        </div>
+                    </div>
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-file"></i> ${doc.type || 'Unknown type'}<br>
+                        <i class="fas fa-calendar"></i> ${formatDate(doc.uploadDate)}<br>
+                        ${doc.owner ? `<i class="fas fa-user"></i> ${doc.owner.name}` : ''}
+                    </p>
+                    ${doc.isShared && doc.shareMessage ? 
+                        `<p class="card-text small text-info">
+                            <i class="fas fa-comment"></i> ${doc.shareMessage}
+                        </p>` : ''
+                    }
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100">
+                        <button class="btn btn-sm btn-primary" onclick="viewDocument(${doc.id})">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="downloadDocument(${doc.id})">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        ${doc.isOwner ? 
+                            `<button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Render shared document cards
+function renderSharedDocumentCards(shares, container, isSharedWithMe) {
+    if (!shares || shares.length === 0) {
+        container.innerHTML = '<div class="col-12"><div class="alert alert-info">No shared documents found</div></div>';
+        return;
+    }
+    
+    container.innerHTML = shares.map(share => `
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card document-card h-100">
+                <div class="card-body">
+                    <h6 class="card-title">${share.document.name}</h6>
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-file"></i> ${share.document.type || 'Unknown type'}<br>
+                        <i class="fas fa-calendar"></i> ${formatDate(share.document.uploadDate)}<br>
+                        <i class="fas fa-user"></i> ${isSharedWithMe ? share.owner.name : share.recipient.name}<br>
+                        <i class="fas fa-clock"></i> Shared: ${formatDate(share.sharedAt)}
+                    </p>
+                    ${share.message ? 
+                        `<p class="card-text small text-info">
+                            <i class="fas fa-comment"></i> ${share.message}
+                        </p>` : ''
+                    }
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100">
+                        <button class="btn btn-sm btn-primary" onclick="viewDocument(${share.document.id})">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="downloadDocument(${share.document.id})">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        ${!isSharedWithMe ? 
+                            `<button class="btn btn-sm btn-warning" onclick="revokeAccess(${share.document.id}, '${share.recipient.email}')">
+                                <i class="fas fa-ban"></i> Revoke
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Upload document
+function uploadDocument() {
+    const formData = new FormData();
+    const fileInput = document.getElementById('documentFile');
+    
+    if (!fileInput.files[0]) {
+        alert('Please select a file to upload');
+        return;
+    }
+    
+    formData.append('file', fileInput.files[0]);
+    
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+        document.getElementById('uploadForm').reset();
+        showSuccessMessage('Document uploaded successfully!');
+        loadDocuments('all');
+        loadDocuments('owned');
+    })
+    .catch(error => {
+        console.error('Error uploading document:', error);
+        showErrorMessage('Error uploading document');
+    });
+}
+
+// Share document
+function shareDocument() {
+    const documentId = document.getElementById('documentSelect').value;
+    const recipientEmail = document.getElementById('recipientEmail').value;
+    const message = document.getElementById('shareMessage').value;
+    
+    if (!documentId || !recipientEmail) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    fetch(`/documents/${documentId}/share`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            recipientEmail: recipientEmail,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('shareModal')).hide();
+        document.getElementById('shareForm').reset();
+        showSuccessMessage('Document shared successfully!');
+        loadDocuments('shared-by-me');
+    })
+    .catch(error => {
+        console.error('Error sharing document:', error);
+        showErrorMessage('Error sharing document');
+    });
+}
+
+// View document details
+function viewDocument(documentId) {
+    fetch(`/my-files?page=0&size=100`)
+        .then(response => response.json())
+        .then(data => {
+            const doc = (data.content || data).find(d => d.id === documentId);
+            if (doc) {
+                showDocumentModal(doc);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading document details:', error);
+        });
+}
+
+// Show document modal
+function showDocumentModal(document) {
+    const modalBody = document.getElementById('documentModalBody');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <h6>Document Information</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Name:</strong></td><td>${document.name}</td></tr>
+                    <tr><td><strong>Type:</strong></td><td>${document.type || 'Unknown'}</td></tr>
+                    <tr><td><strong>Upload Date:</strong></td><td>${formatDate(document.uploadDate)}</td></tr>
+                    <tr><td><strong>Size:</strong></td><td>${document.filePath ? 'Available' : 'Unknown'}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <i class="fas fa-file fa-4x text-primary"></i>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    downloadBtn.onclick = () => downloadDocument(document.id);
+    deleteBtn.onclick = () => deleteDocument(document.id);
+    
+    // Show/hide delete button based on ownership
+    if (document.student && document.student.username === currentUser) {
+        deleteBtn.style.display = 'inline-block';
+    } else {
+        deleteBtn.style.display = 'none';
+    }
+    
+    new bootstrap.Modal(document.getElementById('documentModal')).show();
+}
+
+// Download document
+function downloadDocument(documentId) {
+    window.open(`/download/${documentId}`, '_blank');
+}
+
+// Delete document
+function deleteDocument(documentId) {
+    if (confirm('Are you sure you want to delete this document?')) {
+        fetch(`/delete/${documentId}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                showSuccessMessage('Document deleted successfully!');
+                loadDocuments('all');
+                loadDocuments('owned');
+                bootstrap.Modal.getInstance(document.getElementById('documentModal')).hide();
+            } else {
+                throw new Error('Failed to delete document');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting document:', error);
+            showErrorMessage('Error deleting document');
+        });
+    }
+}
+
+// Revoke access
+function revokeAccess(documentId, recipientEmail) {
+    if (confirm('Are you sure you want to revoke access for this user?')) {
+        fetch(`/documents/${documentId}/share`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                recipientEmail: recipientEmail
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                showSuccessMessage('Access revoked successfully!');
+                loadDocuments('shared-by-me');
+            } else {
+                throw new Error('Failed to revoke access');
+            }
+        })
+        .catch(error => {
+            console.error('Error revoking access:', error);
+            showErrorMessage('Error revoking access');
+        });
+    }
+}
+
+// Load notifications
+function loadNotifications() {
+    fetch('/notifications/unread')
+        .then(response => response.json())
+        .then(data => {
+            updateNotificationCount(data.length);
+            renderNotifications(data);
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+        });
+}
+
+// Update notification count
+function updateNotificationCount(count) {
+    const badge = document.getElementById('notificationCount');
+    if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// Render notifications
+function renderNotifications(notifications) {
+    const container = document.getElementById('notificationsList');
+    
+    if (!notifications || notifications.length === 0) {
+        container.innerHTML = '<div class="dropdown-item text-muted">No unread notifications</div>';
+        return;
+    }
+    
+    container.innerHTML = notifications.map(notification => `
+        <div class="dropdown-item notification-item unread" onclick="markAsRead(${notification.id})">
+            <div class="d-flex justify-content-between">
+                <strong>${notification.title}</strong>
+                <small class="text-muted">${formatDate(notification.createdAt)}</small>
+            </div>
+            <div class="small">${notification.message}</div>
+        </div>
+    `).join('');
+}
+
+// Mark notification as read
+function markAsRead(notificationId) {
+    fetch(`/notifications/${notificationId}/read`, {
+        method: 'POST'
+    })
+    .then(response => {
+        if (response.ok) {
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+// Mark all notifications as read
+function markAllAsRead() {
+    fetch('/notifications/read-all', {
+        method: 'POST'
+    })
+    .then(response => {
+        if (response.ok) {
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking all notifications as read:', error);
+    });
+}
+
+// Utility functions
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+function showSuccessMessage(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function showErrorMessage(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Populate document select for sharing
+function populateDocumentSelect() {
+    fetch('/my-files?page=0&size=100')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('documentSelect');
+            select.innerHTML = '<option value="">Choose a document to share...</option>';
+            
+            (data.content || data).forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = doc.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading documents for sharing:', error);
+        });
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Connect to WebSocket
+    connectWebSocket();
+    
+    // Load initial data
+    loadDocuments('all');
+    loadNotifications();
+    
+    // Tab change event
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            const target = e.target.getAttribute('data-bs-target').substring(1);
+            loadDocuments(target);
+        });
+    });
+    
+    // Modal events
+    document.getElementById('uploadModal').addEventListener('show.bs.modal', function() {
+        // Reset form when modal opens
+        document.getElementById('uploadForm').reset();
+    });
+    
+    document.getElementById('shareModal').addEventListener('show.bs.modal', function() {
+        // Populate document select when modal opens
+        populateDocumentSelect();
+        document.getElementById('shareForm').reset();
+    });
+    
+    // Update notifications every 30 seconds
+    setInterval(loadNotifications, 30000);
+});
+</script>
+</body>
+</html> 

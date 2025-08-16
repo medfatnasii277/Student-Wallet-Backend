@@ -20,11 +20,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import StudentWallet.StudentWallet.Exception.DocumentNotFoundException;
 import StudentWallet.StudentWallet.Exception.FileStorageException;
+import StudentWallet.StudentWallet.Exception.UnauthorizedAccessException;
 import StudentWallet.StudentWallet.Model.Documents;
 import StudentWallet.StudentWallet.Model.DocumentsTag;
 import StudentWallet.StudentWallet.Model.Student;
 import StudentWallet.StudentWallet.Repository.DocumentsRepo;
 import StudentWallet.StudentWallet.Repository.documentsTagRepository;
+import StudentWallet.StudentWallet.Repository.DocumentShareRepository;
 
 @Service
 public class DocumentsService {
@@ -34,6 +36,9 @@ public class DocumentsService {
 
     @Autowired
     private documentsTagRepository tagRepo;
+
+    @Autowired
+    private DocumentShareRepository documentShareRepository;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -89,6 +94,30 @@ public class DocumentsService {
     public Documents getFileById(Long fileId) {
         return documentsRepository.findById(fileId)
                 .orElseThrow(() -> new DocumentNotFoundException("Document with ID " + fileId + " not found"));
+    }
+    
+    // Check if a student has access to a document
+    public boolean hasAccessToDocument(Long fileId, Student student) {
+        Documents document = getFileById(fileId);
+        
+        // Check if owner
+        if (document.getStudent().getId().equals(student.getId())) {
+            return true;
+        }
+        
+        // Check if shared
+        return documentShareRepository.existsByDocumentAndRecipient(document, student);
+    }
+    
+    // Get file by ID with access control
+    public Documents getFileByIdWithAccessControl(Long fileId, Student student) {
+        Documents document = getFileById(fileId);
+        
+        if (!hasAccessToDocument(fileId, student)) {
+            throw new UnauthorizedAccessException("You don't have access to this document");
+        }
+        
+        return document;
     }
 
     // Delete a file from both the database and filesystem
