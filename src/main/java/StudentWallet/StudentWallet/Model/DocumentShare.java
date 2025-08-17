@@ -2,8 +2,6 @@ package StudentWallet.StudentWallet.Model;
 
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -26,17 +24,14 @@ public class DocumentShare {
     
     @ManyToOne
     @JoinColumn(name = "document_id", nullable = false)
-    @JsonBackReference
     private Documents document;
     
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)
-    @JsonBackReference
     private Student owner;
     
     @ManyToOne
     @JoinColumn(name = "recipient_id", nullable = false)
-    @JsonBackReference
     private Student recipient;
     
     @NotNull
