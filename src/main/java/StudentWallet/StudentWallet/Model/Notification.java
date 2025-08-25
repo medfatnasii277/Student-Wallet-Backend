@@ -2,6 +2,9 @@ package StudentWallet.StudentWallet.Model;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Entity;
@@ -35,6 +38,7 @@ public class Notification {
     
     @ManyToOne
     @JoinColumn(name = "document_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonBackReference
     private Documents document;
     

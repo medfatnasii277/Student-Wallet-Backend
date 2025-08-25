@@ -101,6 +101,7 @@ public class NotificationService {
     /**
      * Mark a notification as read
      */
+    @org.springframework.transaction.annotation.Transactional
     public void markNotificationAsRead(Long notificationId) {
         notificationRepository.markAsRead(notificationId);
     }

@@ -1,5 +1,7 @@
 package StudentWallet.StudentWallet.config;
 
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,8 +27,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import StudentWallet.StudentWallet.security.JwtAuthenticationFilter;
 import StudentWallet.StudentWallet.security.MyUserDetailService;
-
-import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -88,22 +88,25 @@ public class SecurityConfig implements WebMvcConfigurer {
 					// Admin
 					registry.requestMatchers("/admin/**").hasRole("ADMIN");
 
-					// Documents and profiles (authenticated)
-					registry.requestMatchers(
-							"/my-files",
-							"/upload/**",
-							"/download/**",
-							"/delete/**",
-							"/profile-picture",
-							"/profile"
-					).authenticated();
+		    // Allow WebSocket handshake and SockJS endpoints
+		    registry.requestMatchers("/ws/**", "/ws", "/sockjs-node/**").permitAll();
 
-					// Chat endpoints (authenticated)
-					registry.requestMatchers(
-							"/rooms/**"
-					).authenticated();
+		    // Documents and profiles (authenticated)
+		    registry.requestMatchers(
+			    "/my-files",
+			    "/upload/**",
+			    "/download/**",
+			    "/delete/**",
+			    "/profile-picture",
+			    "/profile"
+		    ).authenticated();
 
-					registry.anyRequest().authenticated();
+		    // Chat endpoints (authenticated)
+		    registry.requestMatchers(
+			    "/rooms/**"
+		    ).authenticated();
+
+		    registry.anyRequest().authenticated();
 				})
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.build();
